@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$GOARCH" == "arm64" ]; then
+  exit # Do not pack arm64 executables
+fi
+
+upx "$1"
