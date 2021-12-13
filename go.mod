@@ -8,5 +8,5 @@ require (
 	github.com/rs/zerolog v1.26.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vjeantet/ldapserver v1.0.1
-	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
+	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 )
