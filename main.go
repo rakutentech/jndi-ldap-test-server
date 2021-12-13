@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/rakuten-tech/jndi-ldap-test-server/args"
 	"github.com/rakuten-tech/jndi-ldap-test-server/routes"
 	"github.com/rakuten-tech/jndi-ldap-test-server/util/logging"
@@ -23,46 +22,14 @@ func main() {
 }
 
 func runApp(c *cli.Context) error {
-	logging.UpdateLoggerWithFlags(
-		&logging.Flags{
-			Color: c.String("color"),
-			Level: c.String("log-level"),
-		},
-	)
-	ldapLogger := log.With().Str("component", "server").Logger()
-	ldap.Logger = logging.NewStdAdapter(&ldapLogger)
-
-	payload := c.String("exploit-payload")
-	if payload != "" {
-		routes.SetVulnerablePayload(payload)
-	}
-
-	server := ldap.NewServer()
-	server.Handle(routes.AllRoutes())
-
-	listenAddress := c.String("listen-address")
-	port := c.Int("port")
-
-	go func() {
-		err := server.ListenAndServe(fmt.Sprintf("%s:%d", listenAddress, port), func(server *ldap.Server) {
-			// Called if server is listening successfully
-			log.Info().
-				Str("component", "server").
-				Str("event", "listen").
-				Str("listen_address", listenAddress).
-				Int("port", port).
-				Msgf("Listening on %s:%d", listenAddress, port)
-		})
-		if err != nil {
-			log.Fatal().
-				Str("component", "server").
-				Str("event", "listen").
-				Str("listen_address", listenAddress).
-				Int("port", port).
-				Err(err).
-				Msgf("Cannot listen on %s:%d", listenAddress, port)
-		}
-	}()
+	// Setup according to CLI flags
+	setupLogger(c)
+	c.StringSlice("dynamic-payloads")
+	routes.SetExploit(routes.ParseExploitSettings(
+		c.String("payload"),
+		args.GetEnumValueSet(c, "dynamic-payloads"),
+	))
+	server := startServer(c.String("listen-address"), c.Int("port"))
 
 	// Quit gracefully on SIGINT (CTRL-C) and SIGTERM
 	ch := make(chan os.Signal)
@@ -73,4 +40,15 @@ func runApp(c *cli.Context) error {
 	server.Stop()
 
 	return nil
+}
+
+func setupLogger(c *cli.Context) {
+	logging.UpdateLoggerWithFlags(
+		&logging.Flags{
+			Color: c.String("color"),
+			Level: c.String("log-level"),
+		},
+	)
+	ldapLogger := log.With().Str("component", "server").Logger()
+	ldap.Logger = logging.NewStdAdapter(&ldapLogger)
 }

@@ -20,11 +20,9 @@ type EnumValue struct {
 }
 
 func (e *EnumValue) Set(value string) error {
-	for _, enum := range e.Enum {
-		if enum == value {
-			e.selected = value
-			return nil
-		}
+	if isEnumValue(e.Enum, value) {
+		e.selected = value
+		return nil
 	}
 
 	return fmt.Errorf("allowed values are %s", strings.Join(e.Enum, ", "))
@@ -35,4 +33,13 @@ func (e EnumValue) String() string {
 		return e.Default
 	}
 	return e.selected
+}
+
+func isEnumValue(enum []string, value string) bool {
+	for _, enum := range enum {
+		if enum == value {
+			return true
+		}
+	}
+	return false
 }

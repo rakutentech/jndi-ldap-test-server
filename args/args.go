@@ -24,16 +24,25 @@ func RunWithArgs(args []string, runApp func(ctx *cli.Context) error) error {
 				Value: "0.0.0.0",
 			},
 			&cli.StringFlag{
-				Name: "exploit-payload",
-				Usage: "Use a custom payload string",
+				Name:  "payload",
+				Usage: "set the default exploit payload string",
+				Value: "!!! VULNERABLE !!!",
 			},
 			&cli.GenericFlag{
-				Name: "color",
-				Usage: "Force console color settings",
+				Name:    "dynamic-payloads",
+				Aliases: []string{"d"},
+				Usage:   "allow dynamic payloads (allowed: string)",
+				Value:   &EnumValueSet{
+					Enum:       []string{"string"},
+				},
+			},
+			&cli.GenericFlag{
+				Name:  "color",
+				Usage: "force console color settings (allowed: auto, always, never)",
 				Value: EnumValues("auto", "always", "never"),
 			},
 			&cli.GenericFlag{
-				Name: "log-level",
+				Name:  "log-level",
 				Usage: "log level",
 				Value: EnumValues("info", "debug", "warn", "err", "fatal"),
 			},
@@ -43,4 +52,3 @@ func RunWithArgs(args []string, runApp func(ctx *cli.Context) error) error {
 
 	return app.Run(args)
 }
-

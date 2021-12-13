@@ -3,22 +3,16 @@ package routes
 import (
 	"github.com/lor00x/goldap/message"
 	javaser "github.com/rakuten-tech/jndi-ldap-test-server/java/serialization"
-	"github.com/rakuten-tech/jndi-ldap-test-server/util/must"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/vjeantet/ldapserver"
+	"strings"
 )
-
-// This payload is the serialized Java String "!!! VULNERABLE !!!"
-// The payload was generated using the code in extra/generate-payload.kt
-var vulnerableStringPayload = must.DecodeBase64("rO0ABXQAEiEhISBWVUxORVJBQkxFICEhIQ==")
-
-func SetVulnerablePayload(payload string) {
-	vulnerableStringPayload = javaser.EncodeString(payload)
-}
 
 func handleSearch(w ldapserver.ResponseWriter, m *ldapserver.Message) {
 	r := m.GetSearchRequest()
+	baseDN := string(r.BaseObject())
+	payload := getExploitPayload(baseDN)
 
 	log.Info().
 		Str("component", "ldap").
@@ -35,7 +29,7 @@ func handleSearch(w ldapserver.ResponseWriter, m *ldapserver.Message) {
 
 	e := ldapserver.NewSearchResultEntry("")
 	e.AddAttribute("javaClassName", "foo")
-	e.AddAttribute("javaSerializedData", message.AttributeValue(vulnerableStringPayload))
+	e.AddAttribute("javaSerializedData", message.AttributeValue(payload))
 	w.Write(e)
 
 	res := ldapserver.NewSearchResultDoneResponse(ldapserver.LDAPResultSuccess)
@@ -48,4 +42,15 @@ func arrayOfLdapStrings(ldapStrings []message.LDAPString) *zerolog.Array {
 		arr.Str(string(s))
 	}
 	return arr
+}
+
+var stringPayloadPrefix = "Payload/String/"
+
+func getExploitPayload(baseDN string) []byte {
+	// Use custom dynamic payload if allowed and requested
+	if strings.HasPrefix(baseDN, stringPayloadPrefix) && exploitSettings.AllowDynamicPayloads.String {
+		return javaser.EncodeString(baseDN[len(stringPayloadPrefix):])
+	}
+
+	return exploitSettings.DefaultPayload
 }
